@@ -1,9 +1,36 @@
 #!/usr/bin/perl -w
 
+################################################################################
+#
+# Copyright (c) 2017 University of Utah
+# All Rights Reserved.
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted,
+# provided that the above copyright notice appears in all copies and
+# that both that copyright notice and this permission notice appear
+# in supporting documentation, and that the name of The University
+# of Utah not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission. This software is supplied as is without expressed or
+# implied warranties of any kind.
+#
+################################################################################
+
 use strict;
 
+# Format is:
+# 	'username regex' => [
+#		'options:AppName.app',
+#	]
+#
+# When a user logs in, the name is matched to the username regex.  If it matches, it uses
+# that dock.
+#
+# The options are passed straight to dockutil.
+
 my $user_docks = {
-	'^james$|^spencer$' => [
+	'^admin1|^admin2' => [
 		':Safari.app',
 		':System Preferences.app',
 		':App Store.app',
@@ -18,7 +45,7 @@ my $user_docks = {
 		':Network.prefPane',
 		':StartupDisk.prefPane',
 	],
-	'^scholar$|^u\d{7}$' => [
+	'^student|^u\d{7}$' => [
 		':Safari.app',
 		':Firefox.app',
 		':Google Chrome.app',
@@ -34,26 +61,12 @@ my $user_docks = {
 	],
 };
 
-my @default_remove = (
-	"Launchpad",
-	"Safari",
-	"Mail",
-	"Contacts",
-	"Calendar",
-	"Notes",
-	"Reminders",
-	"Maps",
-	"Photos",
-	"Messages",
-	"FaceTime",
-	"Pages",
-	"Numbers",
-	"Keynote",
-	"iTunes",
-	"iBooks",
-	"App Store",
-	"System Preferences",
-	"Downloads",
+my @search_paths = (
+    '/Applications/',
+    '/Applications/Utilities/',
+    '/System/Library/CoreServices/',
+    '/System/Library/CoreServices/Applications/',
+    '/System/Library/PreferencePanes/',
 );
 
 my $dockutil = "/usr/local/bin/dockutil";
@@ -68,9 +81,9 @@ if ( ! defined $user or $user eq '' ) {
 		chomp $user;
 	}
 }
-
-my $pref_path = "/Users/$user/Library/Preferences/com.apple.dock.plist";
-chdir( "/Users/$user" );
+my $userdir = (getpwnam $user)[7];
+my $pref_path = "$userdir/Library/Preferences/com.apple.dock.plist";
+chdir( $userdir );
 
 ##########################################################################################
 # Erase first?
@@ -129,13 +142,6 @@ sub find_item {
 	my $extraparams = $$args[0];
 	my $path = $$args[1];
 	if ( $path !~ /^[\/~]/ ) {
-		my @search_paths = (
-		    '/Applications/',
-		    '/Applications/Utilities/',
-		    '/System/Library/CoreServices/',
-		    '/System/Library/CoreServices/Applications/',
-		    '/System/Library/PreferencePanes/',
-		);
 		for my $search ( @search_paths ) {
 			if ( -e $search.$path ) {
 				add_item( $search.$path, $extraparams, $restart );
